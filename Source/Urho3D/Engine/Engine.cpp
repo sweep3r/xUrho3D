@@ -755,6 +755,10 @@ int Engine::ApplyFrameLimit()
 
         long long targetMax = 1000000LL / maxFps;
 
+		const unsigned MAX_NO_INPUT = 100;
+		const unsigned MIN_FPS_ENGAGE = 5;
+		int ms = 0;
+
         for (;;)
         {
             elapsed = frameTimer_.GetUSec(false);
@@ -766,6 +770,22 @@ int Engine::ApplyFrameLimit()
             {
                 unsigned sleepTime = (unsigned)((targetMax - elapsed) / 1000LL);
                 Time::Sleep(sleepTime);
+
+				// On low framerate, at least check for input, for mobile low-power and responsive. HWD
+				if (maxFps_ < MIN_FPS_ENGAGE)
+				{
+					ms++;
+					if (ms > MAX_NO_INPUT)
+					{
+						ms = 0;
+
+						// CheckForInput event
+						using namespace CheckForInput;
+
+						VariantMap& eventData = GetEventDataMap();
+						SendEvent(E_CHECKFORINPUT, eventData);
+					}
+				}
             }
         }
     }

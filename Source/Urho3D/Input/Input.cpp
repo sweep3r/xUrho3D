@@ -1519,6 +1519,7 @@ void Input::Initialize()
     ResetState();
 
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(Input, HandleBeginFrame));
+	SubscribeToEvent(E_CHECKFORINPUT, URHO3D_HANDLER(Input, HandleBeginFrame));
 #ifdef __EMSCRIPTEN__
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Input, HandleEndFrame));
 #endif
