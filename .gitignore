@@ -102,3 +102,6 @@ configure*
 *.bak
 Thumbs.db
 .directory
+
+/.vs/
+/out/build/
