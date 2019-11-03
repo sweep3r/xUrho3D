@@ -97,6 +97,7 @@ Engine::Engine(Context* context) :
     timeStep_(0.0f),
     timeStepSmoothing_(2),
     minFps_(10),
+	jumpoutFps_(false),
 #if defined(IOS) || defined(TVOS) || defined(__ANDROID__) || defined(__arm__) || defined(__aarch64__)
     maxFps_(60),
     maxInactiveFps_(10),
@@ -577,6 +578,8 @@ void Engine::SetMinFps(int fps)
 
 void Engine::SetMaxFps(int fps)
 {
+	if (maxFps_ <= 1) 
+		jumpoutFps_ = true;
     maxFps_ = (unsigned)Max(fps, 0);
 }
 
@@ -755,33 +758,35 @@ int Engine::ApplyFrameLimit()
 
         long long targetMax = 1000000LL / maxFps;
 
-		const unsigned MAX_NO_INPUT = 100;
-		const unsigned MIN_FPS_ENGAGE = 5;
-		int ms = 0;
+		const unsigned SLEEP_CHUNK_MS = 20;
+		const unsigned MAX_CHUNKS = 5;
+		int chunks = 0;
+		jumpoutFps_ = false;
 
         for (;;)
         {
             elapsed = frameTimer_.GetUSec(false);
-            if (elapsed >= targetMax)
+            if (elapsed >= targetMax || jumpoutFps_)
                 break;
 
             // Sleep if 1 ms or more off the frame limiting goal
             if (targetMax - elapsed >= 1000LL)
             {
-                unsigned sleepTime = (unsigned)((targetMax - elapsed) / 1000LL);
-                Time::Sleep(sleepTime);
-
-				// On low framerate, at least check for input, for mobile low-power and responsive. HWD
-				if (maxFps_ < MIN_FPS_ENGAGE)
+				if (maxFps > 1)
 				{
-					ms++;
-					if (ms > MAX_NO_INPUT)
+					unsigned sleepTime = (unsigned)((targetMax - elapsed) / 1000LL);
+					Time::Sleep(sleepTime);
+				}
+				else 
+				{
+					// At FPS <=1, check for input every chunk, for a fast way out of the very 
+					// low FPS on mobile. We don't care here if we're a little over the goal.
+					Time::Sleep(SLEEP_CHUNK_MS);
+					if (++chunks > MAX_CHUNKS)
 					{
-						ms = 0;
-
+						chunks = 0;
 						// CheckForInput event
 						using namespace CheckForInput;
-
 						VariantMap& eventData = GetEventDataMap();
 						SendEvent(E_CHECKFORINPUT, eventData);
 					}

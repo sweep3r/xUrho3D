@@ -140,6 +140,8 @@ private:
     unsigned maxFps_;
     /// Maximum frames per second when the application does not have input focus.
     unsigned maxInactiveFps_;
+    /// Jump out of the FPS wait loop.
+    bool jumpoutFps_;
     /// Pause when minimized flag.
     bool pauseMinimized_;
 #ifdef URHO3D_TESTING
